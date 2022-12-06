@@ -129,11 +129,12 @@ const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
-    const { _id, name, email } = user;
+    const { _id, name, email,password } = user;
     res.status(200).json({
       _id,
       name,
-      email
+      email,
+      password
     });
   } else {
     res.status(400);
