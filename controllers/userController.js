@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const Token = require("../models/tokenModel");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
+const { profile } = require("console");
 // Generate Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
@@ -161,16 +162,36 @@ const updateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
-    const { name, email } = user;
+    const { email,name} = user;
     user.email = req.body.email || email;
     user.name = req.body.name || name;
-   
 
     const updatedUser = await user.save();
     res.status(200).json({
       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email
+    });
+  } else {
+    res.status(404);
+    throw new Error("User not found");
+  }
+});
+
+
+// reset password for google
+const setpassword = asyncHandler(async (req, res) => {
+  const user = await User.findOne({_id: req.params.id });
+  if (user) {
+    const { password } = user;
+   
+    user.password = req.body.password || password;
+
+    const updatedUser = await user.save();
+    res.status(200).json({
+      
+      password: updatedUser.password,
+     
     });
   } else {
     res.status(404);
@@ -310,5 +331,7 @@ module.exports = {
   updateUser,
   changePassword,
   forgotPassword,
-  resetPassword
+  resetPassword,
+ setpassword ,
+
 }
