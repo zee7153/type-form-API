@@ -36,7 +36,12 @@ app.use(session({
     saveUninitialized: true,
     cookie: { secure: true }
  }));
-
+ //this is for uncaught exception
+ process.on("uncaughtException", (err) => {
+    console.log(`Error: ${err.message}`);
+    console.log(`Shutting down the server due to Uncaught Exception`);
+    process.exit(1);
+  });
 
 // initialize passport
 app.use(passport.initialize());
@@ -46,7 +51,7 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
-  
+
 
 app.use('/api/question', questionRoute)
 app.use('/api/survay', survayRoute)

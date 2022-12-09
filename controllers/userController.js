@@ -6,6 +6,7 @@ const Token = require("../models/tokenModel");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
 const { profile } = require("console");
+const cloudinary = require("cloudinary");
 // Generate Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
@@ -13,6 +14,11 @@ const generateToken = (id) => {
 
 // Register User
 const registerUser = asyncHandler(async (req, res) => {
+  const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+    folder: "avatars",
+    width: 150,
+    crop: "scale",
+  });
   const { name, email, password } = req.body;
 
   // Validation
@@ -38,6 +44,10 @@ const registerUser = asyncHandler(async (req, res) => {
     name,
     email,
     password,
+    avatar: {
+      public_id: myCloud.public_id,
+      url: myCloud.secure_url,
+    },
   });
 
   //   Generate Token
