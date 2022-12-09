@@ -5,10 +5,8 @@ const cookieParser  = require('cookie-parser')
 const bodyparser = require('body-parser')
 const cloudinary = require("cloudinary");
 const cors = require('cors')
-const questionRoute = require('./routes/questionRoute')
-const survayRoute = require('./routes/survayRoute')
-const userRoute = require('./routes/userRoute')
-const auth = require('./routes/authRoute')
+const router=require("./routes")
+
 const session = require('express-session');
 const cookieSession = require("cookie-session");
 const fileUpload = require("express-fileupload");
@@ -53,10 +51,8 @@ cloudinary.config({
   });
 
 
-app.use('/api/question', questionRoute)
-app.use('/api/survay', survayRoute)
-app.use('/api/user',userRoute)
-app.use('/',auth)
+app.use('/api/v1', router)
+
 
 
 app.use(errorHandler);
