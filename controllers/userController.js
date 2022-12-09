@@ -330,9 +330,28 @@ const resetPassword = asyncHandler(async (req, res) => {
     message: "Password Reset Successful, Please Login",
   });
 });
-///
+
+
+
+/// Get All User
 const getAll = asyncHandler(async (req, res) => {
   const users = await User.find();
+
+  if (users) {
+   
+    res.status(200).json({
+    users
+    });
+  } else {
+    res.status(400);
+    throw new Error("User Not Found");
+  }
+});
+
+
+
+const getsingleuser = asyncHandler(async (req, res) => {
+  const users = await User.findById({_id:req.params.id});
 
   if (users) {
    
@@ -356,5 +375,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
  setpassword ,
+ getsingleuser,
 
 }
