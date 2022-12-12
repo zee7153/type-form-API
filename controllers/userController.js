@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel");
+const UserOTPverification = require('../models/optverificationModel')
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const Token = require("../models/tokenModel");
@@ -363,6 +364,45 @@ const getsingleuser = asyncHandler(async (req, res) => {
     throw new Error("User Not Found");
   }
 });
+
+
+//send opt verification email
+
+const sendOPTverificationemail = async({_id,email},res)=>{
+   try {
+      const otp = `${Math.floor(1000 + Math.random() * 9000)}`
+
+      // mail option
+      const milOption = {
+        from:process.env.EMAIL_USER,
+        to:User.email,
+        subject : "Verify your email address",
+        html:`<h2>Hello</h2>
+             <p>Please Enter ${otp}the url below to reset your password</p>  
+             <p>This otp is valid for only minutes.</p>
+             <p>Regards...</p>
+             <p>Type Form</p>`
+     ,  };
+    const saltRound = 10;
+    const hashedotp = await bcrypt.hash(otp,saltRound);
+    const newOTPverification =await new UserOTPverification({
+      userId: _id,
+      otp:hashedotp,
+      createdAt:Date.now(),
+      expiresAt:Date.now()+3600000,
+    });
+
+    //save otp code 
+    await newOTPverification.save();
+    await transporter.sendEmail(milOption);
+
+    res.json({
+      status:"pending"
+    })
+   } catch (error) {
+    
+   }
+} 
 module.exports = {
   registerUser,
   loginUser,
