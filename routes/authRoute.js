@@ -19,7 +19,7 @@ router.get('/login/facebook',(req,res)=>{
 router.get("/auth/facebook",passport.authenticate('facebook',{
   scope:['public_profile','email']
 }));
-router.get("/auth/facebook/callback",function(){
+router.get("/facebook/callback",function(){
  passport.authenticate('facebook',{
   successRedirect:'/profile',
   failureRedirect:'/error'
