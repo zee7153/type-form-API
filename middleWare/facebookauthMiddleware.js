@@ -2,14 +2,14 @@ const passport = require('passport');
 const FacebookStrategy = require('passport-facebook').Strategy;
 const User = require('../models/userModel');
 
-passport.serializeUser((user, done) => {
-    done(null, user.id);
+passport.serializeUser((user, cb) => {
+    cb(null, user);
 });
 
-passport.deserializeUser((id, done) => {
-    User.findById(id).then((user) => {
-        done(null, user);
-    });
+passport.deserializeUser((obj,cb) => {
+   
+        cb(null, obj);
+    
 });
 passport.use(new FacebookStrategy({
     clientID: '512474604251024',
@@ -17,11 +17,11 @@ passport.use(new FacebookStrategy({
     callbackURL: "http://localhost:3000/facebook/callback",
     profileFields: ['id', 'displayName', 'photos', 'email'],
   },
-  function(accessToken, refreshToken, profile, cb) {
+  function(accessToken, refreshToken, profile, done) {
     console.log(profile);
     User.findOrCreate({ facebookId: profile.id }, function (err, user) {
        
-      return cb(err, user);
+      return done(null,profile);
     });
   }
 ));
