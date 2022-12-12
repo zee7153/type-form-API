@@ -2,9 +2,9 @@ const mongoose = require('mongoose')
 
 const userOPTverificationSchema = new mongoose.Schema({
     userId : String,
-    opt :String,
+    otp :String,
     createdAt: Date,
-    expiered:Date
+    expiredAt: Date,
 });
 
 

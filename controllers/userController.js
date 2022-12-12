@@ -8,6 +8,7 @@ const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
 const { profile } = require("console");
 const cloudinary = require("cloudinary");
+const nodemailer = require("nodemailer")
 // Generate Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
@@ -49,33 +50,23 @@ const registerUser = asyncHandler(async (req, res) => {
       public_id: myCloud.public_id,
       url: myCloud.secure_url,
     },
-  });
-
-  //   Generate Token
-  const token = generateToken(user._id);
-
-  // Send HTTP-only cookie
-  res.cookie("token", token, {
+  }).then((result)=>{
+      //   Generate Token
+    const token = generateToken(result._id);
+    sendOPTverificationemail(result,res);
+    // Send HTTP-only cookie
+   res.cookie("token", token, {
     path: "/",
     httpOnly: true,
     expires: new Date(Date.now() + 1000 * 86400), // 1 day
     // sameSite: "none",
     // secure: true,
   });
-
-  if (user) {
-    const { _id, name, email } = user;
-    res.status(201).json({
-      _id,
-      name,
-      email,
-      token,
-    });
-  } else {
-    res.status(400);
-    throw new Error("Invalid user data");
-  }
+  }).catch((err)=>{
+    console.log(err)
+  })
 });
+// ................................................
 
 // Login User
 const loginUser = asyncHandler(async (req, res) => {
@@ -368,21 +359,21 @@ const getsingleuser = asyncHandler(async (req, res) => {
 
 //send opt verification email
 
-const sendOPTverificationemail = async({_id,email},res)=>{
+const sendOPTverificationemail = async(result,res)=>{
+  const {_id,email} = result
    try {
       const otp = `${Math.floor(1000 + Math.random() * 9000)}`
 
       // mail option
       const milOption = {
         from:process.env.EMAIL_USER,
-        to:User.email,
+        to:email,
         subject : "Verify your email address",
         html:`<h2>Hello</h2>
-             <p>Please Enter ${otp}the url below to reset your password</p>  
-             <p>This otp is valid for only minutes.</p>
+             <p>Please Enter ${otp} for login </p>  
+             <p>This otp is valid for only 60  minutes.</p>
              <p>Regards...</p>
-             <p>Type Form</p>`
-     ,  };
+             <p>Type Form</p>` };
     const saltRound = 10;
     const hashedotp = await bcrypt.hash(otp,saltRound);
     const newOTPverification =await new UserOTPverification({
@@ -393,16 +384,114 @@ const sendOPTverificationemail = async({_id,email},res)=>{
     });
 
     //save otp code 
+    let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS 
+      }
+
+    });
     await newOTPverification.save();
-    await transporter.sendEmail(milOption);
+    transporter.sendMail(milOption, function (err, info) {
+      if(err)
+        console.log(err)
+      else
+        console.log(info);
+   });
+   
+    // await transporter.sendEmail(milOption);
 
     res.json({
-      status:"pending"
+      status:"pending",
+      message:"verification email send to you email address",
+      data:{
+        userId:_id,
+        email,
+      },
     })
    } catch (error) {
-    
+    res.json({
+      status:"Failed",
+      message:error.message,
+    })
    }
 } 
+
+
+// Verify the otp 
+
+const verifyOPT = async(req,res)=>{
+  try {
+   let { userId, otp } = req.body;
+   if (!userId || !otp) {
+     throw Error("Empty otp details are not allowed")
+   } else {
+     const UserOTPverificationRecords = await UserOTPverification.find({
+       userId,
+     });
+     if (UserOTPverificationRecords.length <= 0) {
+       // no record found
+       throw new Error(
+         "Account record not exist or has been verified. please signup and log in"
+       );
+     }else{
+       // user OTP record exist 
+       const {expiresAt} = UserOTPverificationRecords[0];
+       const hashedotp = UserOTPverificationRecords[0].otp;
+
+       if (expiresAt < Date.now()) {
+         // user otp record has been expired
+
+         await UserOTPverification.deleteMany({userId});
+
+         throw new Error ("code has been expired please try again request");
+       }else{
+         const validOTP = await bcrypt.compare(otp,hashedotp);
+
+         if(!validOTP){
+           //supplied otp wrong
+           throw new Error("invalied code passed check your inbox");
+         }else{
+           //success
+          await User.updateOne({_id:userId},{verified:true});
+          await UserOTPverification.deleteMany({userId});
+          res.json({
+           status:"verified",
+           message: `user email verified successfully`
+          })
+         }
+       }
+     }
+   }
+  } catch (error) {
+    res.json({
+     status:"Failed",
+     message: error.message
+    })
+  }
+}
+
+// resend the otp for verification
+
+
+const resendotpverificationcode = async(req,res)=>{
+  try {
+    let {userId,email} = req.body;
+    if (!userId || !email) {
+      throw Error ("Empty user details are not allowed")
+    } else {
+      await UserOTPverification.deleteMany({ userId });
+      sendOPTverificationemail({_id: userId, email},res)
+    }
+  } catch (error) {
+    res.json({
+      status:"Failed",
+      message:error.message
+    })
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -416,5 +505,8 @@ module.exports = {
   resetPassword,
  setpassword ,
  getsingleuser,
+ sendOPTverificationemail,
+ verifyOPT,
+ resendotpverificationcode
 
 }

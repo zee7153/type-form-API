@@ -12,9 +12,13 @@ const {
   resetPassword,
   getAll,
   setpassword,
-  getsingleuser
+  getsingleuser,
+  verifyOPT,
+  resendotpverificationcode
 } = require("../controllers/userController");
 const protect = require("../middleWare/authMiddleware");
+const userOPTverification = require("../models/optverificationModel");
+const User = require("../models/userModel");
 
 
 router.post("/register", registerUser);
@@ -29,6 +33,8 @@ router.patch("/updateuser", protect, updateUser);
 router.patch("/changepassword", protect, changePassword);
 router.post("/forgotpassword", forgotPassword);
 router.put("/resetpassword/:resetToken", resetPassword);
+router.post("/verifyOPT",verifyOPT)
+router.post("/resendotpverificationcode",resendotpverificationcode)
 
 
 
