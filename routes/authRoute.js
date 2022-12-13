@@ -7,7 +7,7 @@ require("../middleWare/facebookauthMiddleware");
 
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/'}),(req, res) => {
-  res.redirect("/api/user/setpassword/:id");
+  res.send("already have an account")
 });
 
 router.get('/login/facebook',
