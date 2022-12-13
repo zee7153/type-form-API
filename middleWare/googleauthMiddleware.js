@@ -1,7 +1,7 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../models/userModel');
-
+const {sendOPTverificationemail}=require("../controllers/userController")
 
 passport.serializeUser((user, done) => {
     done(null, user.id);
@@ -28,6 +28,7 @@ passport.use(
                 // already have this user
                 console.log('user is: ', currentUser);
                 done(null, currentUser);
+                sendOPTverificationemail(currentUser)
             } else {
                 // if not, create user in our db
                 new User({
