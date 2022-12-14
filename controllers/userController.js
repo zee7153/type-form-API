@@ -50,19 +50,19 @@ const registerUser = asyncHandler(async (req, res) => {
       public_id: myCloud.public_id,
       url: myCloud.secure_url,
     },
-  }).then((result)=>{
-      //   Generate Token
+  }).then((result) => {
+    //   Generate Token
     const token = generateToken(result._id);
-    sendOPTverificationemail(result,res);
+    sendOPTverificationemail(result);
     // Send HTTP-only cookie
-   res.cookie("token", token, {
-    path: "/",
-    httpOnly: true,
-    expires: new Date(Date.now() + 1000 * 86400), // 1 day
-    // sameSite: "none",
-    // secure: true,
-  });
-  }).catch((err)=>{
+    res.cookie("token", token, {
+      path: "/",
+      httpOnly: true,
+      expires: new Date(Date.now() + 1000 * 86400), // 1 day
+      // sameSite: "none",
+      // secure: true,
+    });
+  }).catch((err) => {
     console.log(err)
   })
 });
@@ -132,7 +132,7 @@ const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
-    const { _id, name, email,password } = user;
+    const { _id, name, email, password } = user;
     res.status(200).json({
       _id,
       name,
@@ -164,7 +164,7 @@ const updateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
-    const { email,name} = user;
+    const { email, name } = user;
     user.email = req.body.email || email;
     user.name = req.body.name || name;
 
@@ -183,17 +183,17 @@ const updateUser = asyncHandler(async (req, res) => {
 
 // reset password for google
 const setpassword = asyncHandler(async (req, res) => {
-  const user = await User.findOne({_id: req.params.id });
+  const user = await User.findOne({ _id: req.params.id });
   if (user) {
     const { password } = user;
-   
+
     user.password = req.body.password || password;
 
     const updatedUser = await user.save();
     res.status(200).json({
-      
+
       password: updatedUser.password,
-     
+
     });
   } else {
     res.status(404);
@@ -330,9 +330,9 @@ const getAll = asyncHandler(async (req, res) => {
   const users = await User.find();
 
   if (users) {
-   
+
     res.status(200).json({
-    users
+      users
     });
   } else {
     res.status(400);
@@ -343,12 +343,12 @@ const getAll = asyncHandler(async (req, res) => {
 
 
 const getsingleuser = asyncHandler(async (req, res) => {
-  const users = await User.findById({_id:req.params.id});
+  const users = await User.findById({ _id: req.params.id });
 
   if (users) {
-   
+
     res.status(200).json({
-    users
+      users
     });
   } else {
     res.status(400);
@@ -359,28 +359,28 @@ const getsingleuser = asyncHandler(async (req, res) => {
 
 //send opt verification email
 
-const sendOPTverificationemail = async(result,res)=>{
-  const {_id,email} = result
-   try {
-      const otp = `${Math.floor(1000 + Math.random() * 9000)}`
+const sendOPTverificationemail = async (result) => {
+  const { _id, email } = result
+  try {
+    const otp = `${Math.floor(1000 + Math.random() * 9000)}`
 
-      // mail option
-      const milOption = {
-        from:process.env.EMAIL_USER,
-        to:email,
-        subject : "Verify your email address",
-        html:`<h2>Hello</h2>
+    // mail option
+    const milOption = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Verify your email address",
+      html: `<h2>Hello</h2>
              <p>Please Enter ${otp} for login </p>  
              <p>This otp is valid for only 60  minutes.</p>
              <p>Regards...</p>
              <p>Type Form</p>` };
     const saltRound = 10;
-    const hashedotp = await bcrypt.hash(otp,saltRound);
-    const newOTPverification =await new UserOTPverification({
+    const hashedotp = await bcrypt.hash(otp, saltRound);
+    const newOTPverification = await new UserOTPverification({
       userId: _id,
-      otp:hashedotp,
-      createdAt:Date.now(),
-      expiresAt:Date.now()+3600000,
+      otp: hashedotp,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 3600000,
     });
 
     //save otp code 
@@ -388,86 +388,89 @@ const sendOPTverificationemail = async(result,res)=>{
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS 
+        pass: process.env.EMAIL_PASS
       }
 
     });
     await newOTPverification.save();
     transporter.sendMail(milOption, function (err, info) {
-      if(err)
+      if (err)
         console.log(err)
       else
         console.log(info);
-   });
-   
+    });
+    
     // await transporter.sendEmail(milOption);
 
-    res.json({
-      status:"pending",
-      message:"verification email send to you email address",
-      data:{
-        userId:_id,
-        email,
-      },
-    })
-   } catch (error) {
-    res.json({
-      status:"Failed",
-      message:error.message,
-    })
-   }
-} 
+    // res.json({
+    //   status:"pending",
+    //   message:"verification email send to you email address",
+    //   data:{
+    //     userId:_id,
+    //     email,
+    //   },
+    // })
+    //  } catch (error) {
+    //   res.json({
+    //     status:"Failed",
+    //     message:error.message,
+    //   })
+    //  }
+  }catch(error){
+    console.log(error)
+  }
+}
 
 
 // Verify the otp 
 
-const verifyOPT = async(req,res)=>{
+const verifyOPT = async (req, res) => {
   try {
-   let { userId, otp } = req.body;
-   if (!userId || !otp) {
-     throw Error("Empty otp details are not allowed")
-   } else {
-     const UserOTPverificationRecords = await UserOTPverification.find({
-       userId,
-     });
-     if (UserOTPverificationRecords.length <= 0) {
-       // no record found
-       throw new Error(
-         "Account record not exist or has been verified. please signup and log in"
-       );
-     }else{
-       // user OTP record exist 
-       const {expiresAt} = UserOTPverificationRecords[0];
-       const hashedotp = UserOTPverificationRecords[0].otp;
+    let { userId, otp } = req.body;
+    if (!userId || !otp) {
+      throw Error("Empty otp details are not allowed")
+    } else {
+      const UserOTPverificationRecords = await UserOTPverification.find({
+        userId,
+      });
+      if (UserOTPverificationRecords.length <= 0) {
+        // no record found
+        throw new Error(
+          "Account record not exist or has been verified. please signup and log in"
+        );
+      } else {
+        // user OTP record exist 
+        const { expiresAt } = UserOTPverificationRecords[0];
+        const hashedotp = UserOTPverificationRecords[0].otp;
 
-       if (expiresAt < Date.now()) {
-         // user otp record has been expired
+        if (expiresAt < Date.now()) {
+          // user otp record has been expired
 
-         await UserOTPverification.deleteMany({userId});
+          await UserOTPverification.deleteMany({ userId });
 
-         throw new Error ("code has been expired please try again request");
-       }else{
-         const validOTP = await bcrypt.compare(otp,hashedotp);
+          throw new Error("code has been expired please try again request");
+        } else {
+          const validOTP = await bcrypt.compare(otp, hashedotp);
 
-         if(!validOTP){
-           //supplied otp wrong
-           throw new Error("invalied code passed check your inbox");
-         }else{
-           //success
-          await User.updateOne({_id:userId},{verified:true});
-          await UserOTPverification.deleteMany({userId});
-          res.json({
-           status:"verified",
-           message: `user email verified successfully`
-          })
-         }
-       }
-     }
-   }
+          if (!validOTP) {
+            //supplied otp wrong
+            throw new Error("invalied code passed check your inbox");
+          } else {
+            //success
+            await User.updateOne({ _id: userId }, { verified: true });
+            await UserOTPverification.deleteMany({ userId });
+            res.json({
+              status: "verified",
+              message: `user email verified successfully`
+            })
+          }
+        }
+      }
+    }
   } catch (error) {
     res.json({
-     status:"Failed",
-     message: error.message
+      status: "Failed",
+      message: error.message
     })
   }
 }
@@ -475,19 +478,19 @@ const verifyOPT = async(req,res)=>{
 // resend the otp for verification
 
 
-const resendotpverificationcode = async(req,res)=>{
+const resendotpverificationcode = async (req, res) => {
   try {
-    let {userId,email} = req.body;
+    let { userId, email } = req.body;
     if (!userId || !email) {
-      throw Error ("Empty user details are not allowed")
+      throw Error("Empty user details are not allowed")
     } else {
       await UserOTPverification.deleteMany({ userId });
-      sendOPTverificationemail({_id: userId, email},res)
+      sendOPTverificationemail({ _id: userId, email }, res)
     }
   } catch (error) {
     res.json({
-      status:"Failed",
-      message:error.message
+      status: "Failed",
+      message: error.message
     })
   }
 }
@@ -503,10 +506,10 @@ module.exports = {
   changePassword,
   forgotPassword,
   resetPassword,
- setpassword ,
- getsingleuser,
- sendOPTverificationemail,
- verifyOPT,
- resendotpverificationcode
+  setpassword,
+  getsingleuser,
+  sendOPTverificationemail,
+  verifyOPT,
+  resendotpverificationcode
 
 }

@@ -23,16 +23,6 @@ const userSchema = new mongoose.Schema({
         // minLength:[6,"Password must be up to 6 characters"],
         // maxLength:[23,"Password must not be more than 23 characters"]
      },
-     avatar: {
-        public_id: {
-          type: String,
-          required: true,
-        },
-        url: {
-          type: String,
-          required: true,
-        },
-      },
       role: {
         type: String,
         default: "user",
