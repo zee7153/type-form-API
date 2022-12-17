@@ -53,7 +53,8 @@ const registerUser = asyncHandler(async (req, res) => {
   }).then((result) => {
     //   Generate Token
     const token = generateToken(result._id);
-    sendOPTverificationemail(result);
+    sendOPTverificationemail(result)
+    res.send(result)
     // Send HTTP-only cookie
     res.cookie("token", token, {
       path: "/",
@@ -485,7 +486,8 @@ const resendotpverificationcode = async (req, res) => {
       throw Error("Empty user details are not allowed")
     } else {
       await UserOTPverification.deleteMany({ userId });
-      sendOPTverificationemail({ _id: userId, email }, res)
+      sendOPTverificationemail({ _id: userId, email })
+      res.send("verification email send to  your email address")
     }
   } catch (error) {
     res.json({
